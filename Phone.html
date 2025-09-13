@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能手机界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            padding: 20px;
+        }
+        
+        /* 手机外壳 */
+        .phone-container {
+            position: relative;
+            width: 360px;
+            height: 740px;
+            background: #000;
+            border-radius: 40px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 4px solid #333;
+        }
+        
+        /* 屏幕区域 */
+        .screen {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 30px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            height: 25px;
+            background: #000;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            align-items: center;
+            font-size: 12px;
+            z-index: 10;
+        }
+        
+        /* 主屏幕 */
+        .home-screen {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 15px;
+            padding: 20px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23000" opacity="0.05"/></svg>');
+        }
+        
+        .app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        
+        .app-icon:active {
+            transform: scale(0.95);
+        }
+        
+        .app-icon i {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .app-icon span {
+            font-size: 12px;
+            color: #333;
+        }
+        
+        /* QQ聊天界面 */
+        .chat-screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+        
+        .chat-header {
+            height: 50px;
+            background: #12B7F5;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: white;
+        }
+        
+        .chat-header .back-btn {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .message {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .message.self {
+            flex-direction: row-reverse;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+        }
+        
+        .friend .message-content {
+            background: white;
+            border-top-left-radius: 2px;
+        }
+        
+        .self .message-content {
+            background: #95EC69;
+            border-top-right-radius: 2px;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .chat-input {
+            height: 50px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            background: white;
+        }
+        
+        .chat-input i {
+            font-size: 24px;
+            color: #7d7d7d;
+            margin: 0 8px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            height: 36px;
+            border: none;
+            border-radius: 18px;
+            background: #f0f0f0;
+            padding: 0 15px;
+            margin: 0 8px;
+        }
+        
+        .send-btn {
+            color: #12B7F5;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        /* API连接界面 */
+        .api-screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            background: white;
+            padding: 20px;
+        }
+        
+        .api-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .api-header .back-btn {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        
+        .api-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            height: 44px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            padding: 0 15px;
+            font-size: 16px;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            border-color: #8B5CF6;
+            outline: none;
+        }
+        
+        .platform-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 44px;
+            border: 1px solid #8B5CF6;
+            border-radius: 8px;
+            padding: 0 15px;
+            background: white;
+            color: #8B5CF6;
+        }
+        
+        .get-key-btn {
+            background: #8B5CF6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            height: 60px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #7d7d7d;
+        }
+        
+        .nav-item.active {
+            color: #12B7F5;
+        }
+        
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="phone-container">
+        <div class="screen">
+            <div class="status-bar">
+                <span>14:41</span>
+                <span>运营商</span>
+                <span>100% <i class="fas fa-battery-full"></i></span>
+            </div>
+            
+            <!-- 主屏幕 -->
+            <div class="home-screen" id="homeScreen">
+                <div class="app-icon" onclick="openApp('qq')">
+                    <i class="fab fa-qq" style="color: #12B7F5;"></i>
+                    <span>QQ</span>
+                </div>
+                <div class="app-icon" onclick="openApp('api')">
+                    <i class="fas fa-plug" style="color: #8B5CF6;"></i>
+                    <span>API连接</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-book" style="color: #FF9F43;"></i>
+                    <span>世界书</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-brain" style="color: #10AC84;"></i>
+                    <span>记忆</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-comments" style="color: #0ABDE3;"></i>
+                    <span>论坛</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fab fa-reddit" style="color: #FF6B6B;"></i>
+                    <span>小红书</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-camera" style="color: #5F27CD;"></i>
+                    <span>相机</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-sms" style="color: #1DD1A1;"></i>
+                    <span>短信</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-mobile-alt" style="color: #FF9FF3;"></i>
+                    <span>查看手机</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-cog" style="color: #576574;"></i>
+                    <span>设置</span>
+                </div>
+                <div class="app-icon">
+                    <i class="fas fa-database" style="color: #F368E0;"></i>
+                    <span>备份数据</span>
+                </div>
+            </div>
+            
+            <!-- QQ聊天界面 -->
+            <div class="chat-screen" id="qqScreen">
+                <div class="chat-header">
+                    <div class="back-btn" onclick="closeApp('qq')">
+                        <i class="fas fa-arrow-left"></i>
+                    </div>
+                    <div class="chat-title">口水战存活者</div>
+                    <div style="flex: 1;"></div>
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                
+                <div class="chat-messages">
+                    <div class="message-time">08/25 14:41</div>
+                    
+                    <div class="message friend">
+                        <div class="avatar">
+                            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='40' r='30' fill='%2312B7F5'/><rect x='25' y='75' width='50' height='20' fill='%2312B7F5'/></svg>" alt="头像">
+                        </div>
+                        <div class="message-content">
+                            我们已成功添加为好友，现在可以开始聊天啦~
+                        </div>
+                    </div>
+                    
+                    <div class="message friend">
+                        <div class="avatar">
+                            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='40' r='30' fill='%2312B7F5'/><rect x='25' y='75' width='50' height='20' fill='%2312B7F5'/></svg>" alt="头像">
+                        </div>
+                        <div class="message-content">
+                         你好   
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <i class="fas fa-microphone"></i>
+                    <i class="fas fa-image"></i>
+                    <i class="fas fa-camera"></i>
+                    <i class="far fa-smile"></i>
+                    <input type="text" placeholder="输入消息...">
+                    <div class="send-btn">发送</div>
+                </div>
+            </div>
+            
+            <!-- API连接界面 -->
+            <div class="api-screen" id="apiScreen">
+                <div class="api-header">
+                    <div class="back-btn" onclick="closeApp('api')">
+                        <i class="fas fa-arrow-left"></i>
+                    </div>
+                    <div class="api-title">新建API连接</div>
+                </div>
+                
+                <div class="input-group">
+                    <label>名称</label>
+                    <input type="text" placeholder="请输入名称">
+                </div>
+                
+                <div class="input-group">
+                    <label>模型平台</label>
+                    <div class="platform-btn">
+                        <span>自定义 (OpenAI 协议)</span>
+                        <div>
+                            <i class="fas fa-question-circle" style="color: #8B5CF6; margin-right: 10px;"></i>
+                            <i class="fas fa-chevron-down" style="color: #8B5CF6;"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>API 接口地址</label>
+                    <input type="text" placeholder="请输入接口地址">
+                    <i class="fas fa-question-circle" style="color: #8B5CF6;"></i>
+                </div>
+                
+                <div class="input-group">
+                    <label>API 密钥</label>
+                    <div style="display: flex;">
+                        <input type="text" placeholder="请输入密钥" style="flex: 1;">
+                        <button class="get-key-btn">点击获取</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>模型</label>
+                    <div style="display: flex;">
+                        <input type="text" placeholder="模型名字和模型内容" style="flex: 1;">
+                        <i class="fas fa-question-circle" style="color: #8B5CF6; margin-left: 10px; align-self: center;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部导航 -->
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>首页</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-message"></i>
+                    <span>消息</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-user-friends"></i>
+                    <span>好友</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span>我</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 应用管理
+        function openApp(appName) {
+            document.getElementById('homeScreen').style.display = 'none';
+            document.getElementById(appName + 'Screen').style.display = 'flex';
+        }
+        
+        function closeApp(appName) {
+            document.getElementById(appName + 'Screen').style.display = 'none';
+            document.getElementById('homeScreen').style.display = 'grid';
+        }
+        
+        // 模拟数据持久化
+        const storage = {
+            set: (key, value) => {
+                localStorage.setItem(key, JSON.stringify(value));
+            },
+            get: (key) => {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : null;
+            }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以在这里加载保存的数据
+        });
+    </script>
+</body>
+</html>
