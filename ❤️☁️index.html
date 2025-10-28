@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>森 - iOS手机 (v3.0 融合版)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --phone-width: 375px;
+            --phone-height: 812px;
+            --primary-text: #000;
+            --secondary-text: #8e8e93;
+            --background-color: #f0f2f5;
+            --qq-blue: #12B7F5;
+            --battery-green: #34c759;
+            --battery-red: #ff3b30;
+        }
+
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; margin: 0; overflow: hidden; }
+        .phone-container { width: var(--phone-width); height: var(--phone-height); background: #1c1c1e; border-radius: 44px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; position: relative; border: 10px solid #111; }
+        .screen { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; background-color: #000; }
+
+        /* 锁屏界面 */
+        .lock-screen { position: absolute; inset: 0; background-image: url('https://tc.z.wiki/autoupload/f/_dUEGnKEJQzmc-cKlsXN5NiO_OyvX7mIgxFBfDMDErs/20251021/Ksp2/1173X1080/Image_1760944246183.jpg'); background-size: cover; background-position: center; z-index: 2000; display: flex; flex-direction: column; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .lock-screen.unlocked { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        .lock-time { font-size: 72px; font-weight: 200; margin: 100px auto 0; }
+        .lock-date { font-size: 20px; font-weight: 400; margin: 0 auto; }
+        .lock-prompt { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: 500; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 主屏幕 */
+        .home-screen { position: absolute; inset: 0; background-image: url('https://tc.z.wiki/autoupload/f/_dUEGnKEJQzmc-cKlsXN5NiO_OyvX7mIgxFBfDMDErs/20251021/AvYd/1600X3462/Image_1760944255964.jpg'); background-size: cover; background-position: center; display: flex; flex-direction: column; }
+        .home-screen-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 80px; }
+        .home-time { font-size: 60px; font-weight: 600; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.5); margin-bottom: 30px; }
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; width: 100%; padding: 0 20px; }
+        .app-icon-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .app-icon-image { width: 60px; height: 60px; border-radius: 13px; overflow: hidden; margin-bottom: 6px; }
+        .app-icon-image img { width: 100%; height: 100%; object-fit: cover; }
+        .app-icon-name { font-size: 12px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+        /* 状态栏 & 灵动岛 */
+        .status-bar { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; color: white; font-size: 15px; position: absolute; top: 0; left: 0; right: 0; z-index: 1100; text-shadow: 0 1px 2px rgba(0,0,0,0.5); pointer-events: none; }
+        .status-bar-left, .status-bar-right { display: flex; align-items: center; padding: 0 12px; height: 100%; pointer-events: auto; cursor: pointer; }
+        .status-bar-left { gap: 6px; } .status-bar-right { gap: 6px; }
+        .time { font-weight: 600; }
+        .dnd-icon { font-size: 18px; display: none; }
+        .signal-bars { display: flex; align-items: flex-end; height: 12px; gap: 1.5px; }
+        .signal-bar { width: 3px; background-color: white; border-radius: 1px; }
+        .signal-bar:nth-child(1) { height: 25%; } .signal-bar:nth-child(2) { height: 50%; } .signal-bar:nth-child(3) { height: 75%; } .signal-bar:nth-child(4) { height: 100%; }
+        .network-type { font-size: 12px; font-weight: 500; margin-left: 4px; }
+        .battery-icon { width: 24px; height: 11.5px; border: 1.5px solid white; border-radius: 3.5px; position: relative; padding: 1px; box-sizing: border-box; }
+        .battery-icon::after { content: ''; position: absolute; right: -3px; top: 50%; transform: translateY(-50%); width: 1.5px; height: 4px; background-color: white; border-radius: 0 1px 1px 0; }
+        .battery-level { position: absolute; top: 1px; left: 1px; bottom: 1px; background-color: white; border-radius: 2px; transition: width 0.5s ease, background-color 0.5s ease; }
+        .battery-text { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: 700; color: black; z-index: 2; mix-blend-mode: difference; }
+        .charging .battery-level { background-color: var(--battery-green); } .low-battery .battery-level { background-color: var(--battery-red); }
+
+        .dynamic-island { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 125px; height: 36px; background-color: black; border-radius: 20px; display: flex; justify-content: center; align-items: center; color: white; font-size: 14px; cursor: pointer; transition: all 0.5s cubic-bezier(0.32, 0.94, 0.6, 1); z-index: 1099; }
+        .dynamic-island > div { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .dynamic-island .island-default-content { opacity: 1; }
+        .dynamic-island.expanded-music, .dynamic-island.notification { width: 95%; height: 85px; border-radius: 40px; }
+        .dynamic-island.expanded-music .island-music-player, .dynamic-island.notification .island-notification-content { opacity: 1; }
+        .dynamic-island.expanded-music .island-default-content, .dynamic-island.notification .island-default-content { opacity: 0; }
+        .island-music-player { justify-content: space-between; padding: 12px 20px; box-sizing: border-box; }
+        .music-cover { width: 60px; height: 60px; border-radius: 8px; background-color: #333; margin-right: 10px; }
+        .music-details { flex: 1; color: white; } .music-title { font-size: 16px; font-weight: 600; } .music-artist { font-size: 12px; color: #aaa; }
+        .music-controls-island { font-size: 20px; display: flex; gap: 15px; }
+        .island-notification-content { gap: 10px; } .island-notification-content .app-icon { width: 40px; height: 40px; border-radius: 10px; } .island-notification-content .text { color: white; font-size: 16px; }
+
+        /* 应用容器 & 导航 */
+        .app-container, .app-page { position: absolute; inset: 0; background-color: #f0f2f5; display: none; flex-direction: column; z-index: 1000; transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+        .app-container.active, .app-page.active { display: flex; transform: translateX(0); }
+        .app-navigation-bar { height: 90px; padding-top: 44px; display: flex; align-items: center; justify-content: space-between; padding-left: 10px; padding-right: 15px; flex-shrink: 0; }
+        .app-back-btn { font-size: 24px; cursor: pointer; color: var(--qq-blue); padding: 5px; }
+        .app-title { font-size: 17px; font-weight: 600; }
+        .app-refresh-btn { font-size: 20px; cursor: pointer; color: var(--qq-blue); }
+        .app-content { flex: 1; overflow-y: auto; background-color: #f0f2f5; }
+        
+        /* 通知中心 */
+        .notification-center-overlay { position: absolute; inset: 0; background-color: rgba(0,0,0,0.3); backdrop-filter: blur(20px); z-index: 1500; display: none; }
+        .notification-center-overlay.active { display: block; }
+        .notification-list { padding: 60px 15px; display: flex; flex-direction: column; gap: 10px; }
+        .notification-item { background-color: rgba(255,255,255,0.8); border-radius: 15px; padding: 12px; display: flex; flex-direction: column; gap: 5px; }
+        .notification-header { display: flex; align-items: center; gap: 8px; }
+        .notification-app-icon { width: 20px; height: 20px; border-radius: 5px; }
+        .notification-app-name { font-size: 14px; font-weight: 600; }
+        .notification-content { font-size: 15px; }
+
+        /* Home指示器 */
+        .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 135px; height: 5px; background-color: rgba(0,0,0,0.4); border-radius: 3px; cursor: pointer; z-index: 1101; }
+
+        /* 特定APP样式: 设置, 世界书, 豆瓣, 外卖 */
+        .settings-menu, .worldbook-menu { display: flex; flex-direction: column; gap: 10px; padding: 15px; }
+        .setting-item, .menu-item { background-color: white; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 16px; }
+        .setting-item:hover, .menu-item:hover { background-color: #e5e5e5; }
+        .setting-item::after { content: '>'; color: #ccc; }
+        .menu-icon { font-size: 20px; margin-right: 12px; width: 24px; text-align: center; }
+        .api-settings, .data-management { padding: 15px; }
+        .api-form-group, .data-actions { margin-bottom: 15px; }
+        .api-form-group label { display: block; margin-bottom: 5px; }
+        .api-form-group select, .api-form-group input, .data-btn { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .api-actions { display: flex; gap: 10px; } .api-btn { flex: 1; }
+        .api-status { margin-top: 15px; padding: 10px; border-radius: 8px; text-align: center; }
+        .api-status.success { background-color: #d4edda; color: #155724; } .api-status.error { background-color: #f8d7da; color: #721c24; }
+        .api-models-list { margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; max-height: 150px; overflow-y: auto; }
+        .api-model-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; } .api-model-item.selected { background-color: #e0efff; }
+        .current-model { margin-top: 15px; padding: 10px; background-color: #f0f8ff; border-radius: 8px; }
+        .file-input { display: none; }
+
+        /* 外卖APP */
+        .delivery-tabs { display: flex; justify-content: space-around; padding: 10px; background-color: white; }
+        .delivery-tab { padding: 8px 15px; border-radius: 18px; cursor: pointer; }
+        .delivery-tab.active { background-color: var(--meituan-yellow); color: black; }
+        .restaurant-list { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .restaurant-card { background-color: white; border-radius: 10px; padding: 10px; display: flex; gap: 10px; }
+        .restaurant-logo { width: 60px; height: 60px; border-radius: 5px; }
+        .restaurant-info { flex: 1; }
+        .restaurant-name { font-weight: bold; }
+        .restaurant-details { font-size: 12px; color: #666; }
+        .add-to-cart-btn { background-color: var(--meituan-yellow); border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; }
+
+        /* 豆瓣APP */
+        .douban-nav { display: flex; justify-content: space-around; background-color: white; border-bottom: 1px solid #ddd; }
+        .douban-nav-item { padding: 15px; cursor: pointer; }
+        .douban-nav-item.active { border-bottom: 2px solid black; }
+        .douban-page-content { padding: 15px; }
+        .post-card { background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .post-title { font-weight: bold; margin-bottom: 5px; }
+        .post-preview { color: #555; }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <div class="screen">
+            <!-- 锁屏 -->
+            <div class="lock-screen" id="lockScreen">
+                <div class="lock-time">9:41</div>
+                <div class="lock-date">10月28日 星期二</div>
+                <div class="lock-prompt">向上轻扫以打开</div>
+            </div>
+
+            <!-- 主屏幕 -->
+            <div class="home-screen">
+                <div class="home-screen-content">
+                    <div class="home-time">9:41</div>
+                    <div class="app-grid"></div>
+                </div>
+            </div>
+
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <div class="status-bar-left" onclick="showNotificationCenter()"><div class="time">9:41</div></div>
+                <div class="status-bar-right">
+                    <div class="signal-bars"><div class="signal-bar"></div><div class="signal-bar"></div><div class="signal-bar"></div><div class="signal-bar"></div></div>
+                    <div class="network-type">5G</div>
+                    <div class="battery-container"><div class="battery-icon"><div class="battery-level"></div><div class="battery-text">80</div></div></div>
+                </div>
+            </div>
+            
+            <!-- 灵动岛 -->
+            <div class="dynamic-island">
+                <div class="island-default-content">森</div>
+                <div class="island-music-player"><img class="music-cover" src="https://i.scdn.co/image/ab67616d0000b273a1024455299a32517267f9a3" alt="cover"><div class="music-details"><div class="music-title">Starboy</div><div class="music-artist">The Weeknd</div></div><div class="music-controls-island" onclick="event.stopPropagation(); triggerMusicIsland();"><i class="fas fa-pause"></i></div></div>
+                <div class="island-notification-content"><img class="app-icon" id="island-noti-icon" src=""><div class="text" id="island-noti-text"></div></div>
+            </div>
+
+            <!-- 通知中心 -->
+            <div class="notification-center-overlay" id="notificationCenterOverlay" onclick="hideNotificationCenter()">
+                <div class="notification-list" id="notificationList"></div>
+            </div>
+
+            <!-- Home指示器 -->
+            <div class="home-indicator" onclick="returnToHome()"></div>
+        
+            <!-- 应用容器 -->
+            <div class="app-container" id="chatContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('chat')"><i class="fas fa-chevron-left"></i></div><div class="app-title">聊天</div></div><div class="app-content"></div></div>
+            <div class="app-container" id="doubanContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('douban')"><i class="fas fa-chevron-left"></i></div><div class="app-title">豆瓣</div><div class="app-refresh-btn" onclick="refreshDouban()">✨</div></div><div class="app-content" id="doubanContent"></div></div>
+            <div class="app-container" id="deliveryContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('delivery')"><i class="fas fa-chevron-left"></i></div><div class="app-title">外卖</div><div class="app-refresh-btn" onclick="refreshDelivery()">✨</div></div><div class="app-content" id="deliveryContent"></div></div>
+            <div class="app-container" id="shoppingContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('shopping')"><i class="fas fa-chevron-left"></i></div><div class="app-title">购物</div><div class="app-refresh-btn" onclick="refreshShopping()">✨</div></div><div class="app-content"></div></div>
+            <div class="app-container" id="booksContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('books')"><i class="fas fa-chevron-left"></i></div><div class="app-title">世界书</div></div><div class="app-content" id="booksContent"></div></div>
+            <div class="app-container" id="settingsContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('settings')"><i class="fas fa-chevron-left"></i></div><div class="app-title">设置</div></div><div class="app-content" id="settingsContent"></div></div>
+            <div class="app-container" id="beautifyContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('beautify')"><i class="fas fa-chevron-left"></i></div><div class="app-title">美化</div></div><div class="app-content"></div></div>
+            <div class="app-container" id="memoContainer"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeApp('memo')"><i class="fas fa-chevron-left"></i></div><div class="app-title">备忘录</div></div><div class="app-content"></div></div>
+
+            <!-- 设置子页面 -->
+            <div class="app-page" id="apiSettingsPage"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeAppPage('apiSettingsPage')"><i class="fas fa-chevron-left"></i></div><div class="app-title">API设置</div></div><div class="app-content" id="apiSettingsContent"></div></div>
+            <div class="app-page" id="dataManagementPage"><div class="app-navigation-bar"><div class="app-back-btn" onclick="closeAppPage('dataManagementPage')"><i class="fas fa-chevron-left"></i></div><div class="app-title">数据管理</div></div><div class="app-content" id="dataManagementContent"></div></div>
+        </div>
+    </div>
+    
+    <script>
+        // --- 全局状态与数据管理 ---
+        let systemData;
+        const defaultSystemData = {
+            unlocked: false,
+            settings: { dnd: false, apiProvider: 'openai', apiKey: '', apiUrl: '', selectedModel: null },
+            music: { isPlaying: false, song: 'Starboy', artist: 'The Weeknd' },
+            notifications: [],
+            worldbooks: { library: [], current: null },
+            douban: { posts: [{id: 1, title: '欢迎来到豆瓣小组', content: '在这里分享你的生活吧！'}] },
+            delivery: { restaurants: [{id: 1, name: '美味汉堡王', logo: '🍔', details: '月售999+ | 配送约30分钟'}] }
+        };
+
+        function saveSystemData() { try { localStorage.setItem('moriPhoneSystemData_v3', JSON.stringify(systemData)); } catch (e) { console.error("无法保存数据:", e); } }
+        function loadSystemData() { try { const saved = localStorage.getItem('moriPhoneSystemData_v3'); systemData = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(defaultSystemData)); } catch (e) { systemData = JSON.parse(JSON.stringify(defaultSystemData)); } }
+
+        // --- UI & 系统核心 ---
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', { hour: 'numeric', minute: '2-digit', hour12: false });
+            document.querySelector('.time').textContent = timeString;
+            document.querySelector('.lock-time').textContent = timeString;
+            document.querySelector('.home-time').textContent = timeString;
+            document.querySelector('.lock-date').textContent = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
+        }
+        async function updateBattery() {
+            try {
+                const battery = await navigator.getBattery();
+                const level = Math.floor(battery.level * 100);
+                document.querySelector('.battery-level').style.width = `${level}%`;
+                document.querySelector('.battery-text').textContent = level;
+                document.querySelector('.battery-icon').classList.toggle('charging', battery.charging);
+                document.querySelector('.battery-icon').classList.toggle('low-battery', !battery.charging && level <= 20);
+            } catch (e) { console.warn("无法访问电池API。"); }
+        }
+
+        function showNotificationCenter() { renderNotifications(); document.getElementById('notificationCenterOverlay').classList.add('active'); }
+        function hideNotificationCenter() { document.getElementById('notificationCenterOverlay').classList.remove('active'); }
+
+        // --- 应用导航 ---
+        function openApp(appId) { document.getElementById(appId + 'Container').classList.add('active'); }
+        function closeApp(appId) { document.getElementById(appId + 'Container').classList.remove('active'); }
+        function openAppPage(pageId) { document.getElementById(pageId).classList.add('active'); }
+        function closeAppPage(pageId) { document.getElementById(pageId).classList.remove('active'); }
+        function returnToHome() { document.querySelectorAll('.app-container.active, .app-page.active').forEach(el => el.classList.remove('active')); }
+
+        // --- 灵动岛与通知 ---
+        function triggerMusicIsland() {
+            const island = document.querySelector('.dynamic-island');
+            systemData.music.isPlaying = !systemData.music.isPlaying;
+            island.classList.toggle('expanded-music', systemData.music.isPlaying);
+            island.querySelector('.music-controls-island i').className = `fas fa-${systemData.music.isPlaying ? 'pause' : 'play'}`;
+            saveSystemData();
+        }
+        function triggerNotification(app, text) {
+            const newNoti = { id: Date.now(), app: app.name, text: text, icon: app.icon };
+            systemData.notifications.unshift(newNoti);
+            const island = document.querySelector('.dynamic-island');
+            const notiIcon = document.getElementById('island-noti-icon');
+            const notiText = document.getElementById('island-noti-text');
+            
+            notiIcon.src = newNoti.icon;
+            notiText.textContent = `${newNoti.app}: ${newNoti.text}`;
+            island.classList.add('notification');
+            setTimeout(() => island.classList.remove('notification'), 4000);
+            saveSystemData();
+        }
+        function renderNotifications() {
+            const listEl = document.getElementById('notificationList');
+            if (systemData.notifications.length === 0) { listEl.innerHTML = '<div class="notification-item">无新通知</div>'; return; }
+            listEl.innerHTML = systemData.notifications.map(n => `<div class="notification-item"><div class="notification-header"><img src="${n.icon}" class="notification-app-icon"><span class="notification-app-name">${n.app}</span></div><div class="notification-content">${n.text}</div></div>`).join('');
+        }
+
+        // --- API 功能 ---
+        async function callAI(prompt) {
+            if (!systemData.settings.selectedModel || !systemData.settings.apiKey || !systemData.settings.apiUrl) {
+                throw new Error("API未配置或未选择模型");
+            }
+            let apiUrl = systemData.settings.apiUrl;
+            if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
+            if (systemData.settings.apiProvider === 'openai' && !apiUrl.endsWith('/v1')) apiUrl += '/v1';
+            
+            const response = await fetch(`${apiUrl}/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${systemData.settings.apiKey}` },
+                body: JSON.stringify({ model: systemData.settings.selectedModel.id, messages: [{ role: 'user', content: prompt }], max_tokens: 100 })
+            });
+            if (!response.ok) { const err = await response.text(); throw new Error(`AI调用失败: ${err}`); }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // --- 特定APP功能 ---
+        function renderSettings() {
+            document.getElementById('settingsContent').innerHTML = `<div class="settings-menu"><div class="setting-item" onclick="openAppPage('apiSettingsPage')">API与模型设置</div><div class="setting-item" onclick="openAppPage('dataManagementPage')">数据管理</div></div>`;
+            document.getElementById('apiSettingsContent').innerHTML = `<div class="api-settings"><div class="current-model" id="currentModelDisplay" style="display: none;"><h4>当前选定模型</h4><p id="currentModelName">无</p></div><div class="api-form-group"><label for="apiProvider">API接口模型供应商</label><select id="apiProvider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="google">Google Gemini</option><option value="custom">自定义</option></select></div><div class="api-form-group"><label for="apiUrl">填写URL链接</label><input type="url" id="apiUrl" placeholder="https://api.openai.com"></div><div class="api-form-group"><label for="apiKey">输入API密钥</label><input type="password" id="apiKey" placeholder="输入您的API密钥"></div><div class="api-actions"><button class="api-btn api-btn-primary" onclick="fetchModels()">获取模型</button><button class="api-btn api-btn-secondary" onclick="testApiConnection()">测试模型</button></div><div class="api-status" id="apiStatus"></div><div class="api-models-list" id="apiModelsList" style="display: none;"></div><div class="api-actions" style="margin-top: 20px;"><button class="api-btn api-btn-primary" onclick="saveApiSettings()">保存设置</button></div></div>`;
+            document.getElementById('dataManagementContent').innerHTML = `<div class="data-management"><h2>数据备份与恢复</h2><div class="data-actions"><button class="data-btn data-btn-primary" onclick="exportAllData()">导出全部数据</button><button class="data-btn data-btn-secondary" onclick="document.getElementById('importFile').click()">导入数据</button><input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(this)"></div></div>`;
+        }
+        function renderBooks() { document.getElementById('booksContent').innerHTML = `<div class="worldbook-menu"><div class="menu-section"><h2>世界书管理</h2><div class="menu-item" onclick="openWorldbookTab('create')"><div class="menu-icon">📖</div><div class="menu-text">创建新世界书</div></div><div class="menu-item" onclick="openWorldbookTab('library')"><div class="menu-icon">📚</div><div class="menu-text">世界书库</div></div><div class="menu-item" onclick="openWorldbookTab('import')"><div class="menu-icon">⬇️</div><div class="menu-text">导入世界书</div></div><div class="menu-item" onclick="openWorldbookTab('export')"><div class="menu-icon">⬆️</div><div class="menu-text">导出世界书</div></div></div></div><div class="worldbook-content" id="worldbookContentArea"></div>`; }
+        function renderDouban() { document.getElementById('doubanContent').innerHTML = `<div class="douban-nav"><div class="douban-nav-item active" onclick="renderDoubanPage('home')">首页</div><div class="douban-nav-item" onclick="renderDoubanPage('search')">搜索</div><div class="douban-nav-item" onclick="renderDoubanPage('hot')">热搜</div><div class="douban-nav-item" onclick="renderDoubanPage('me')">我</div></div><div class="douban-page-content" id="doubanPageContent"></div>`; renderDoubanPage('home'); }
+        function renderDoubanPage(page) {
+            const contentEl = document.getElementById('doubanPageContent');
+            if (page === 'home') contentEl.innerHTML = systemData.douban.posts.map(p => `<div class="post-card"><div class="post-title">${p.title}</div><div class="post-preview">${p.content}</div></div>`).join('');
+            else if (page === 'search') contentEl.innerHTML = `<input type="search" placeholder="搜索豆瓣内容" onsearch="window.open('https://www.douban.com/search?q=' + this.value, '_blank')">`;
+            else contentEl.innerHTML = `<h3>${page}页面</h3><p>功能开发中...</p>`;
+        }
+        async function refreshDouban() { try { const newPostContent = await callAI("写一个有趣的豆瓣小组帖子标题和简短内容，格式为：标题 | 内容"); const [title, content] = newPostContent.split('|'); systemData.douban.posts.unshift({id: Date.now(), title: title.trim(), content: content.trim()}); renderDoubanPage('home'); saveSystemData(); } catch(e) { alert(e.message); } }
+        function renderDelivery() { document.getElementById('deliveryContent').innerHTML = `<div class="delivery-tabs"><div class="delivery-tab active">美团</div><div class="delivery-tab">饿了么</div><div class="delivery-tab">京东</div></div><div class="restaurant-list" id="restaurantList"></div>`; renderRestaurantList(); }
+        function renderRestaurantList() { document.getElementById('restaurantList').innerHTML = systemData.delivery.restaurants.map(r => `<div class="restaurant-card"><div class="restaurant-logo">${r.logo}</div><div class="restaurant-info"><div class="restaurant-name">${r.name}</div><div class="restaurant-details">${r.details}</div></div><button class="add-to-cart-btn" onclick="alert('已加入购物车')">+</button></div>`).join(''); }
+        async function refreshDelivery() { try { const newRestaurant = await callAI("生成一个餐厅信息，格式为：logo表情|餐厅名|描述(月售/配送时间)"); const [logo, name, details] = newRestaurant.split('|'); systemData.delivery.restaurants.unshift({id: Date.now(), logo: logo.trim(), name: name.trim(), details: details.trim()}); renderRestaurantList(); saveSystemData(); } catch(e) { alert(e.message); } }
+        function refreshShopping() { alert("购物APP刷新功能开发中..."); }
+
+        // --- 初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSystemData();
+            const appData = [
+                { id: 'chat', name: '聊天', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/IMessage_logo.svg/2048px-IMessage_logo.svg.png' },
+                { id: 'douban', name: '豆瓣', icon: 'https://img.heliar.top/file/1761640211370_retouch_2025102816153556.png' },
+                { id: 'delivery', name: '外卖', icon: 'https://tc.z.wiki/autoupload/f/_dUEGnKEJQzmc-cKlsXN5NiO_OyvX7mIgxFBfDMDErs/20251025/h86b/640X594/Image_1761364260149.png' },
+                { id: 'shopping', name: '购物', icon: 'https://img.heliar.top/file/1761641198173_Image_1761641161208.png' },
+                { id: 'books', name: '世界书', icon: 'https://tc.z.wiki/autoupload/f/_dUEGnKEJQzmc-cKlsXN5NiO_OyvX7mIgxFBfDMDErs/20251025/wdgd/643X630/Image_1761364259392.png' },
+                { id: 'settings', name: '设置', icon: 'https://img.heliar.top/file/1761641197219_Image_1761641166362.png' },
+                { id: 'beautify', name: '美化', icon: 'https://tc.z.wiki/autoupload/f/_dUEGnKEJQzmc-cKlsXN5NiO_OyvX7mIgxFBfDMDErs/20251025/144c/1208X758/Image_1761364260710.png' },
+                { id: 'memo', name: '备忘录', icon: 'https://img.heliar.top/file/1761641197490_Image_1761641163726.png' },
+            ];
+            
+            const appGrid = document.querySelector('.app-grid');
+            appGrid.innerHTML = appData.map(app => `<div class="app-icon-wrapper" onclick="openApp('${app.id}')"><div class="app-icon-image"><img src="${app.icon}" alt="${app.name}"></div><div class="app-icon-name">${app.name}</div></div>`).join('');
+
+            // 渲染各APP的初始内容
+            renderSettings();
+            renderBooks();
+            renderDouban();
+            renderDelivery();
+
+            // 恢复UI状态
+            document.getElementById('lockScreen').classList.toggle('unlocked', systemData.unlocked);
+            document.getElementById('apiProvider').value = systemData.settings.apiProvider;
+            document.getElementById('apiUrl').value = systemData.settings.apiUrl;
+            document.getElementById('apiKey').value = systemData.settings.apiKey;
+            updateCurrentModelDisplay();
+
+            // 启动系统
+            updateTime(); setInterval(updateTime, 1000);
+            updateBattery(); navigator.getBattery().then(b => { b.onlevelchange = updateBattery; b.onchargingchange = updateBattery; });
+            
+            // 锁屏交互
+            const lockScreen = document.getElementById('lockScreen');
+            let startY;
+            lockScreen.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+            lockScreen.addEventListener('touchend', e => { if (startY - e.changedTouches[0].clientY > 50) { lockScreen.classList.add('unlocked'); systemData.unlocked = true; saveSystemData(); } });
+        });
+        // 从旧代码中复制的函数，确保功能完整
+        function updateCurrentModelDisplay() { const d = document.getElementById('currentModelDisplay'); if (systemData.settings.selectedModel) { document.getElementById('currentModelName').textContent = systemData.settings.selectedModel.id; d.style.display = 'block'; } else { d.style.display = 'none'; } }
+        async function testApiConnection() { await fetchModels(); }
+        function saveApiSettings() { systemData.settings.apiProvider = document.getElementById('apiProvider').value; systemData.settings.apiUrl = document.getElementById('apiUrl').value.trim(); systemData.settings.apiKey = document.getElementById('apiKey').value.trim(); saveSystemData(); document.getElementById('apiStatus').textContent = 'API设置已保存！'; document.getElementById('apiStatus').className = 'api-status success'; }
+        function exportAllData() { const d = JSON.stringify(systemData, null, 2), u = 'data:application/json;charset=utf-8,' + encodeURIComponent(d), a = document.createElement('a'); a.href = u; a.download = `森手机备份_${new Date().toISOString().slice(0, 10)}.json`; a.click(); }
+        function importData(i) { const f = i.files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { try { const d = JSON.parse(e.target.result); if (!d.settings) throw new Error('格式不正确'); if (confirm('确定导入数据？将覆盖当前设置。')) { systemData = d; saveSystemData(); location.reload(); } } catch (err) { alert(`导入失败: ${err.message}`); } }; r.readAsText(f); }
+        async function fetchModels() { const p = document.getElementById('apiProvider').value; let u = document.getElementById('apiUrl').value.trim(); const k = document.getElementById('apiKey').value.trim(); const s = document.getElementById('apiStatus'), l = document.getElementById('apiModelsList'); l.style.display = 'none'; l.innerHTML = ''; if (!u || !k) { s.textContent = '错误：请填写完整的API URL和密钥。'; s.className = 'api-status error'; return; } s.textContent = '正在获取模型列表...'; s.className = 'api-status'; if (u.endsWith('/')) u = u.slice(0, -1); if (p === 'openai' && !u.endsWith('/v1')) u += '/v1'; let r = `${u}/models`, h = { 'Content-Type': 'application/json' }; if (p === 'openai' || p === 'custom') h['Authorization'] = `Bearer ${k}`; else if (p === 'anthropic') { h['x-api-key'] = k; h['anthropic-version'] = '2023-06-01'; } else if (p === 'google') { r = `${u}/v1beta/models?key=${k}`; h = {}; } try { const res = await fetch(r, { headers: h }); if (!res.ok) { const err = await res.text(); throw new Error(`(${res.status}) ${err}`); } const d = await res.json(); let m = d.data || d.models || []; if (m.length > 0) { l.innerHTML = '<h3>可用模型列表 (点击选择)</h3>'; m.forEach(md => { const id = md.id || md.name; const el = document.createElement('div'); el.className = 'api-model-item'; el.textContent = id; if (systemData.settings.selectedModel && id === systemData.settings.selectedModel.id) el.classList.add('selected'); el.onclick = () => { document.querySelectorAll('.api-model-item.selected').forEach(i => i.classList.remove('selected')); el.classList.add('selected'); systemData.settings.selectedModel = { id }; updateCurrentModelDisplay(); }; l.appendChild(el); }); l.style.display = 'block'; s.textContent = `成功获取 ${m.length} 个模型。`; s.className = 'api-status success'; } else { s.textContent = '警告：API响应成功，但未返回模型列表。'; s.className = 'api-status error'; } } catch (e) { s.textContent = `获取失败: ${e.message}`; s.className = 'api-status error'; console.error(e); } }
+                // --- WORLD BOOK FUNCTIONS ---
+        function openWorldbookTab(tabName) {
+            const contentEl = document.getElementById('worldbookContent');
+            contentEl.style.display = 'block';
+            switch(tabName) {
+                case 'create': contentEl.innerHTML = `<h3>创建新世界书</h3><input id="wbName" placeholder="名称"><textarea id="wbDesc" placeholder="描述"></textarea><button onclick="createNewWorldbook()">创建</button>`; break;
+                case 'library': contentEl.innerHTML = `<h3>世界书库</h3><div id="wbList"></div>`; loadWorldbookLibrary(); break;
+                case 'import': contentEl.innerHTML = `<h3>导入世界书</h3><button onclick="document.getElementById('wbImport').click()">选择文件</button><input type="file" id="wbImport" class="file-input" onchange="importWorldbook(this)">`; break;
+                case 'export': contentEl.innerHTML = `<h3>导出世界书</h3><button onclick="exportCurrentWorldbook()">导出当前</button>`; break;
+            }
+        }
+        function createNewWorldbook() {
+            const name = document.getElementById('wbName').value;
+            if (!name) { alert('请输入名称'); return; }
+            const newWb = { id: Date.now(), name, description: document.getElementById('wbDesc').value, characters: [], locations: [] };
+            systemData.worldbooks.library.push(newWb);
+            systemData.worldbooks.current = newWb.id;
+            saveSystemData();
+            alert(`"${name}" 创建成功！`);
+        }
+        function loadWorldbookLibrary() {
+            const listEl = document.getElementById('wbList');
+            listEl.innerHTML = systemData.worldbooks.library.map(wb => `<div>${wb.name} <button onclick="openWorldbook('${wb.id}')">打开</button></div>`).join('') || '<p>暂无世界书</p>';
+        }
+        function openWorldbook(id) { systemData.worldbooks.current = id; alert(`已打开ID为 ${id} 的世界书`); }
+        function importWorldbook(input) { /* ... 导入逻辑 ... */ }
+        function exportCurrentWorldbook() { /* ... 导出逻辑 ... */ }
+    </script>
+</body>
+  </html>
